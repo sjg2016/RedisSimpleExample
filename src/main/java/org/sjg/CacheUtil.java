@@ -67,6 +67,7 @@ public class CacheUtil {
             int lockExpire = (int) (lockTimeoutInMS / 1000);
 
             long end = System.currentTimeMillis() + acquireTimeoutInMS;
+            long sleepMin = 10;
             while (System.currentTimeMillis() < end) {
 //            	System.out.println(identifier);
                 if (jedis.setnx(lockKey, identifier) == 1) { //1-设置成功
@@ -78,7 +79,9 @@ public class CacheUtil {
                 }
 
                 try {
-                    Thread.sleep(1);
+//                	System.err.println("waiting for:"+jedis.get(lockKey));
+                	sleepMin = sleepMin-1 >0?sleepMin-1:1;
+                    Thread.sleep(sleepMin);
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                 }
@@ -114,9 +117,12 @@ public class CacheUtil {
                     trans.del(lockKey);
                     List<Object> results = trans.exec();
                     if (results == null) { //事务执行失败，说明key对应的value发生了变化，尝试下一次释放
+                    	System.err.println(identifier+" changed-----------------------");
                         continue;
                     }
                     retFlag = true;
+                }else {
+                	System.err.println(identifier+" changed-----------------------");
                 }
                 jedis.unwatch();
                 break;
