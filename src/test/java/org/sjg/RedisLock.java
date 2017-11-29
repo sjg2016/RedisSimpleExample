@@ -44,20 +44,23 @@ public class RedisLock {
 		for(int i=0;i<threadCount;i++) {
 			// Lambda Runnable
 			Runnable task2 = ()-> { 
-				for(int j = 0;j<100;j++) {
+				for(int j = 0;j<10;j++) {
 					try {
-						String identifier = JedisFactory.cacheUtil().acquireLockWithTimeout("mykey", 10*1000, 10*1000);
-						if(identifier == null) {
+						long startTime = System.currentTimeMillis();
+						String identifier = JedisFactory.cacheUtil().acquireLockWithTimeout("mykey", 200*1000, 10*1000);
+						if(identifier == null) {							
 							numOfAcquireTimeout++;
-							return;
+							continue;
 						}
 						numOfAcquireSuccess++;
+						System.out.println(identifier+" acquire, spent(ms):"+(System.currentTimeMillis()-startTime));
+						startTime = System.currentTimeMillis();
 						if(JedisFactory.cacheUtil().releaseLock("mykey", identifier)) {
 							numOfReleaseLockSuccess++;
 						}else {
 							numOfReleaseLockFialed++;
 						}
-						
+						System.out.println(identifier+" released, spent(ms):"+(System.currentTimeMillis()-startTime));
 					} catch (Exception e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();

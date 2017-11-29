@@ -16,7 +16,7 @@ public class JedisFactory {
 		System.out.println("call jedisPoolConfig....");
 		JedisPoolConfig jedisPoolConfig = new JedisPoolConfig();
 		jedisPoolConfig.setMaxTotal(1000);
-		jedisPoolConfig.setMaxIdle(10);
+		jedisPoolConfig.setMaxIdle(40);
 		jedisPoolConfig.setMaxWaitMillis(10000);
 		jedisPoolConfig.setTestOnBorrow(true);
 		return jedisPoolConfig;

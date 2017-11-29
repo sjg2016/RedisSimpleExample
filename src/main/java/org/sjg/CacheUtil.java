@@ -20,7 +20,7 @@ public class CacheUtil {
 	public CacheUtil(JedisSentinelPool sentinelPool) {
 		this.sentinelPool = sentinelPool;
 	}
-	public synchronized Jedis getJedis() throws Exception {
+	public Jedis getJedis() throws Exception {
 		try {
 			if (sentinelPool != null) {
 				// log.debug("------ sentinelPool is not null,return instance. -------");
@@ -68,6 +68,7 @@ public class CacheUtil {
 
             long end = System.currentTimeMillis() + acquireTimeoutInMS;
             while (System.currentTimeMillis() < end) {
+//            	System.out.println(identifier);
                 if (jedis.setnx(lockKey, identifier) == 1) { //1-设置成功
                 	jedis.expire(lockKey, lockExpire);
                 	return identifier;                   
@@ -77,7 +78,7 @@ public class CacheUtil {
                 }
 
                 try {
-                    Thread.sleep(10);
+                    Thread.sleep(1);
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                 }
@@ -139,7 +140,7 @@ public class CacheUtil {
     		Pipeline pl = jedis.pipelined();
     		while(true) {
     			pl.watch(lockName);
-    			if(pl.get(lockName).get().equals(identifier)) {
+    			if(pl.get(lockName).equals(identifier)) {
     				pl.multi();
     				pl.del(lockName);
     				Response<List<Object>> results = pl.exec();
