@@ -70,7 +70,7 @@ public class CacheUtil {
             while (System.currentTimeMillis() < end) {
                 if (jedis.setnx(lockKey, identifier) == 1) { //1-设置成功
                 	jedis.expire(lockKey, lockExpire);
-                    retIdentifier = identifier;
+                	return identifier;                   
                 }
                 if (jedis.ttl(lockKey) == -1) {    //-1:没有设置TTL但是有这个key -2:不存在这个key；这里针对获取key值的处理但是超时设置不成功的情况
                 	jedis.expire(lockKey, lockExpire);
