@@ -23,7 +23,6 @@ public class RedisLock {
 
 	   }  
 	
-	@Test
 	public void testLock() throws Exception{
 		CacheUtil util = JedisFactory.cacheUtil();  	
 		String identifier = util.acquireLockWithTimeout("mykey", 10*1000, 10*1000);
@@ -35,19 +34,19 @@ public class RedisLock {
 	static int numOfAcquireTimeout = 0;
 	static int numOfReleaseLockSuccess = 0;
 	static int numOfReleaseLockFialed = 0;
-	static int threadCount = 10;
+	static int threadCount = 40;
 	private final CountDownLatch latch = new CountDownLatch(threadCount);
 	@Test
 	public void testMultiThreadLock() throws Exception{
 
-		
+		long startTime_total = System.currentTimeMillis();
 		for(int i=0;i<threadCount;i++) {
 			// Lambda Runnable
 			Runnable task2 = ()-> { 
-				for(int j = 0;j<10;j++) {
+				for(int j = 0;j<20;j++) {
 					try {
 						long startTime = System.currentTimeMillis();
-						String identifier = JedisFactory.cacheUtil().acquireLockWithTimeout("mykey", 200*1000, 10*1000);
+						String identifier = JedisFactory.cacheUtil().acquireLockWithTimeout("mykey", 20*1000,2*1000);
 						if(identifier == null) {							
 							numOfAcquireTimeout++;
 							continue;
@@ -82,6 +81,7 @@ public class RedisLock {
 		System.out.println("numOfAcquireTimeout:"+numOfAcquireTimeout);
 		System.out.println("numOfReleaseLockSuccess:"+numOfReleaseLockSuccess);
 		System.out.println("numOfReleaseLockFialed:"+numOfReleaseLockFialed);
+		System.out.println(" all spent(ms):"+(System.currentTimeMillis()-startTime_total)/(numOfAcquireSuccess+numOfAcquireTimeout));
 		
 	}
 }
