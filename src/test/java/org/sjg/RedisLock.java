@@ -42,7 +42,7 @@ public class RedisLock {
 	static int numOfAcquireTimeout = 0;
 	static int numOfReleaseLockSuccess = 0;
 	static int numOfReleaseLockFialed = 0;
-	static int threadCount = 40;
+	static int threadCount = 250;
 	static long totalAcq = 0;
 	static long totalRelease = 0;
 	private final CountDownLatch latch = new CountDownLatch(threadCount);
@@ -54,7 +54,7 @@ public class RedisLock {
 		for(int i=0;i<threadCount;i++) {
 			// Lambda Runnable
 			Runnable task2 = ()-> { 
-				for(int j = 0;j<100;j++) {
+				for(int j = 0;j<8;j++) {
 					try {
 						long startTime = System.currentTimeMillis();
 						String identifier = JedisFactory.cacheUtil().acquireLockWithTimeout("mykey", 20*1000,2*1000);

@@ -46,7 +46,7 @@ public class CacheUtil {
 
 	public int putIntoWaitingCounter(String lockName,String identifier,long acquireTimeoutInMS,Jedis jedis) throws Exception {
 		 String lockKey = "lock:" + lockName+":"+identifier;
-		 jedis.set(lockKey, identifier);
+		 jedis.set(lockKey, "");
 		 int lockExpire = (int) (acquireTimeoutInMS / 1000);
 		 jedis.expire(lockKey, lockExpire);
 		 return jedis.keys("lock:" + lockName+":*").size();	 
@@ -78,7 +78,7 @@ public class CacheUtil {
 //            startTime = System.currentTimeMillis();
         	jedis = this.getJedis();
         	int waitingThreadCount = putIntoWaitingCounter(lockName,identifier,acquireTimeoutInMS,jedis);
-        	System.out.println("waitingThreadCount:"+waitingThreadCount);
+//        	System.out.println("waitingThreadCount:"+waitingThreadCount);
 //			System.out.println("......................getJedis spent:------------"+(System.currentTimeMillis()-startTime));
             String lockKey = "lock:" + lockName;
             int lockExpire = (int) (lockTimeoutInMS / 1000);
