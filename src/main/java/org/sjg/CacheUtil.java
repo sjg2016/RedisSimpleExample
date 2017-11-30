@@ -44,6 +44,17 @@ public class CacheUtil {
 		}
 	}
 
+	public int putIntoWaitingCounter(String lockName,String identifier,long acquireTimeoutInMS,Jedis jedis) throws Exception {
+		 String lockKey = "lock:" + lockName+":"+identifier;
+		 jedis.set(lockKey, identifier);
+		 int lockExpire = (int) (acquireTimeoutInMS / 1000);
+		 jedis.expire(lockKey, lockExpire);
+		 return jedis.keys("lock:" + lockName+":*").size();	 
+	}
+	public void removeFromWaitingCounter(String lockName,String identifier,Jedis jedis)throws Exception {
+		 String lockKey = "lock:" + lockName+":"+identifier;
+		 jedis.del(lockKey);
+	}
 
 	   /**
      * 获取分布式锁
@@ -60,14 +71,21 @@ public class CacheUtil {
         Jedis jedis = null;
         boolean broken = false;
         String retIdentifier = null;
+//        long startTime = System.currentTimeMillis();
         try {
-        	jedis = this.getJedis();
             String identifier = UUID.randomUUID().toString();
+//			System.out.println("......................UUID spent:------------"+(System.currentTimeMillis()-startTime));
+//            startTime = System.currentTimeMillis();
+        	jedis = this.getJedis();
+        	int waitingThreadCount = putIntoWaitingCounter(lockName,identifier,acquireTimeoutInMS,jedis);
+        	System.out.println("waitingThreadCount:"+waitingThreadCount);
+//			System.out.println("......................getJedis spent:------------"+(System.currentTimeMillis()-startTime));
             String lockKey = "lock:" + lockName;
             int lockExpire = (int) (lockTimeoutInMS / 1000);
 
             long end = System.currentTimeMillis() + acquireTimeoutInMS;
-            long sleepMin = 10;
+            long sleepMils = acquireTimeoutInMS < 4*waitingThreadCount?acquireTimeoutInMS:4*waitingThreadCount;//4*Thread Number
+//            startTime = System.currentTimeMillis();
             while (System.currentTimeMillis() < end) {
 //            	System.out.println(identifier);
                 if (jedis.setnx(lockKey, identifier) == 1) { //1-设置成功
@@ -77,11 +95,11 @@ public class CacheUtil {
                 if (jedis.ttl(lockKey) == -1) {    //-1:没有设置TTL但是有这个key -2:不存在这个key；这里针对获取key值的处理但是超时设置不成功的情况
                 	jedis.expire(lockKey, lockExpire);
                 }
-
+               
                 try {
 //                	System.err.println("waiting for:"+jedis.get(lockKey));
-                	sleepMin = sleepMin-1 >0?sleepMin-1:1;
-                    Thread.sleep(sleepMin);
+                	sleepMils = sleepMils-1 >0?sleepMils-1:1;
+                    Thread.sleep(sleepMils);
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                 }
@@ -91,6 +109,7 @@ public class CacheUtil {
 			throw e;
 		} finally {
 			closeResource(jedis, broken);
+//			System.out.println("......................waiting for lock spent:------------"+(System.currentTimeMillis()-startTime));
 		}
         return retIdentifier;
     }
@@ -108,6 +127,7 @@ public class CacheUtil {
         boolean broken = false;
         String lockKey = "lock:" + lockName;
         boolean retFlag = false;
+//        long startTime = System.currentTimeMillis();
         try {
         	jedis = this.getJedis();
             while (true) {
@@ -117,22 +137,23 @@ public class CacheUtil {
                     trans.del(lockKey);
                     List<Object> results = trans.exec();
                     if (results == null) { //事务执行失败，说明key对应的value发生了变化，尝试下一次释放
-                    	System.err.println(identifier+" changed-----------------------");
+//                    	System.err.println(identifier+" changed-----------------------");
                         continue;
                     }
                     retFlag = true;
                 }else {
-                	System.err.println(identifier+" changed-----------------------");
+//                	System.err.println(identifier+" changed-----------------------");
                 }
                 jedis.unwatch();
                 break;
             }
-
+           removeFromWaitingCounter(lockName,identifier,jedis);
         } catch (JedisException e) {
 			broken = handleJedisException(e);
 			throw e;
 		} finally {
 			closeResource(jedis, broken);
+//			System.out.println("......................waiting for release lock spent:------------"+(System.currentTimeMillis()-startTime));
 		}
         return retFlag;
     }
